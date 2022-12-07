@@ -425,10 +425,6 @@ def training_main(args_ai):
         width_multiplier=args.width_multiplier if hasattr(args, "width_multiplier") else None,
         depth_multiplier=args.depth_multiplier if hasattr(args, "depth_multiplier") else None,
         scaling_factor=args.scaling_factor if hasattr(args, "scaling_factor") else None)
-    teacher_1 = create_model(
-        args.teacher_model,
-        pretrained=args.pretrained,
-        num_classes=args.num_classes,)
 
     xgen_load(model, args_ai=args_ai)
 
@@ -631,10 +627,18 @@ def training_main(args_ai):
     )
 
     # Cocopie pruning 1:add init function******************************************************************************
-    teacher = {'RegNet': teacher_1} 
-    # model, loss = model_factory.create_model(
-    #     args.model, args.student_state_file, args.lr_regime, args.teacher_model,
-    #     args.teacher_state_file, args)
+    teacher = {}
+    if args.distillation_type != 'none':
+        assert args.teacher_path, 'need to specify teacher-path when using distillation'
+        print(f"Creating teacher model: {args.teacher_model}")
+        device = torch.device(args.device)
+        teacher_model = create_model(
+            args.teacher_model,
+            pretrained=args.pretrained,
+            num_classes=args.num_classes,)
+        teacher_model.to(device)
+        teacher_model.eval()
+        teacher = {'teacher_0':teacher_model}
     CL.init(args=args_ai, model=model, optimizer=optimizer, data_loader=loader_train,teacher_models=teacher)
     # export_prune_sp_config_file(CL, 'resnet18.yml')
     # CPL.init(args, model, optimizer)
